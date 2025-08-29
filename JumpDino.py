@@ -1,5 +1,6 @@
 
 #TODO pygame으로 공룡게임 만들어 넣을거임
+#깃허브에 공유됨.
 
 import cv2  # OpenCV 라이브러리 불러오기
 import mediapipe as mp  # MediaPipe 라이브러리
