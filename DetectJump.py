@@ -1,5 +1,3 @@
-
-
 import cv2  # OpenCV 라이브러리 불러오기
 import mediapipe as mp  # MediaPipe 라이브러리
 import pyautogui  # 키 입력용

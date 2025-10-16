@@ -1,14 +1,11 @@
-
-
-
 import pygame
 
 WIDTH, HEIGHT = 800, 400
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.SCALED | pygame.DOUBLEBUF)
-pygame.display.set_caption('Jump Dino Signal Test')
+pygame.display.set_caption('Jump Dino')
 clock = pygame.time.Clock()
-font = pygame.font.SysFont(None, 48)
+font = pygame.font.SysFont("Apple SD Gothic Neo", 48)
 
 # --- 클래스 및 함수 정의 ---
 class Dino:
@@ -54,7 +51,7 @@ def check_collision(dino, obs):
 
 def draw_button(surface, text, rect, color, text_color):
     pygame.draw.rect(surface, color, rect)
-    font_btn = pygame.font.SysFont(None, 36)
+    font_btn = pygame.font.SysFont("Apple SD Gothic Neo", 36)
     txt = font_btn.render(text, True, text_color)
     txt_rect = txt.get_rect(center=rect.center)
     surface.blit(txt, txt_rect)
@@ -81,8 +78,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if game_over and event.type == pygame.MOUSEBUTTONDOWN:
-            if button_rect.collidepoint(event.pos):
+        if game_over:
+            if event.type == pygame.MOUSEBUTTONDOWN and button_rect.collidepoint(event.pos):
+                reset_game()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 reset_game()
 
     screen.fill((255, 255, 255))
@@ -93,12 +92,12 @@ while running:
         jump_signal = keys[pygame.K_SPACE]
         sneak_signal = keys[pygame.K_DOWN]
         if jump_signal:
-            signal_text += "JUMP "
+            signal_text += "점프 "
         if sneak_signal:
-            signal_text += "SNEAK "
+            signal_text += "웅크리기 "
         if not signal_text:
-            signal_text = "NONE"
-        text_surface = font.render(f"Signal: {signal_text}", True, (0, 0, 0))
+            signal_text = "없음"
+        text_surface = font.render(f"신호: {signal_text}", True, (0, 0, 0))
         screen.blit(text_surface, (100, 150))
 
         dino.update(jump_signal)
@@ -118,14 +117,14 @@ while running:
                 game_over = True
 
         score += 1
-        score_surface = font.render(f"Score: {score}", True, (0, 0, 255))
+        score_surface = font.render(f"점수: {score}", True, (0, 0, 255))
         screen.blit(score_surface, (100, 100))
 
     else:
-        over_surface = font.render(f"Game Over! Score: {score}", True, (255, 0, 0))
+        over_surface = font.render(f"게임 오버! 점수: {score}", True, (255, 0, 0))
         screen.blit(over_surface, (WIDTH//2 - over_surface.get_width()//2, HEIGHT//2 - 40))
-        draw_button(screen, "Restart", button_rect, (0, 200, 0), (255,255,255))
-
+        draw_button(screen, "다시 시작", button_rect, (0, 200, 0), (255,255,255))
+  
     pygame.display.flip()
     clock.tick(60)
 
