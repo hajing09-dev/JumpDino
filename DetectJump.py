@@ -1,13 +1,9 @@
 
-#TODO pygame으로 공룡게임 만들어 넣을거임
-#깃허브에 공유됨.
 
 import cv2  # OpenCV 라이브러리 불러오기
 import mediapipe as mp  # MediaPipe 라이브러리
-#import serial
-import pyautogui  # Dino 게임 키 입력용 
+import pyautogui  # 키 입력용
 
-# ar = serial.Serial('/dev/tty.usbserial-B0018XWS', 9600)
 
 # MediaPipe 포즈 인식 모델 설정
 mp_pose = mp.solutions.pose
@@ -17,11 +13,14 @@ mp_drawing = mp.solutions.drawing_utils
 pose = mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.5)
 
 # 웹캠에서 비디오 캡처 시작
-cap = cv2.VideoCapture(1)  # 0 = 아이폰 무선 연결, 1 = 맥북 내장 카메라
+cap = cv2.VideoCapture(1)  # 0 = 아이폰 무선 연결, 1 = 외장 웹캠, 2 = 맥북 내장 카메라
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap.set(cv2.CAP_PROP_FPS, 60)
 
 # 화면에 표시할 기준 선의 Y 좌표 (화면의 중앙)
-line_y = 360  # 아이폰 카메라 기준 480, 맥북 내장 카메라 기준 360
-
+line_y = 360 # 아이폰 카메라 기준 480, 맥북 내장 카메라 기준 360
+ 
 last_signal = None  # 신호 중복 전송 방지용 변수
 
 while cap.isOpened():  # 웹캠이 열려있는 동안 반복
@@ -29,7 +28,6 @@ while cap.isOpened():  # 웹캠이 열려있는 동안 반복
     success, frame = cap.read()
     if not success:  # 프레임을 읽지 못한 경우 루프 종료
         break
-    
 
     # MediaPipe는 RGB 포맷을 사용하므로 BGR을 RGB로 변환
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -61,21 +59,20 @@ while cap.isOpened():  # 웹캠이 열려있는 동안 반복
         cv2.putText(frame, 'None', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (128, 128, 128), 2)
         signal = 'X'
 
-    # 숙이고 있는 동안 down키를 누르고, 아닐 때만 뗌
+    # pyautogui로 키 입력 처리
+    # 웅크리기: down키 누름/뗌
     if signal == 'B' and last_signal != 'B':
         pyautogui.keyDown('down')
     elif last_signal == 'B' and signal != 'B':
         pyautogui.keyUp('down')
 
-    # 점프(R) 신호가 유지되는 동안만 space키를 누르고, 끝나면 뗌
+    # 점프: space키 누름/뗌
     if signal == 'R' and last_signal != 'R':
         pyautogui.keyDown('space')
     elif last_signal == 'R' and signal != 'R':
         pyautogui.keyUp('space')
 
-    if last_signal != signal:
-        #ar.write(signal.encode())
-        last_signal = signal
+    last_signal = signal
 
     # 결과 프레임을 화면에 표시
     cv2.imshow('JumpDinoInput', frame)
@@ -87,4 +84,3 @@ while cap.isOpened():  # 웹캠이 열려있는 동안 반복
 # 웹캠과 모든 창을 닫습니다.
 cap.release()
 cv2.destroyAllWindows()
-#ar.close()

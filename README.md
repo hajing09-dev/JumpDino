@@ -1,3 +1,3 @@
-서현고 CIT 4모둠 파이썬 소스코드
-실행은 main.py를 실행하시고,
-실제 실행되는 주요 코드는 DetectJump.py,dinogame.py로
+서현고 CIT 4모둠 파이썬 소스코드   
+필요 라이브러리 mediapipe, opencv, pygame, pyautogui   
+두 파이썬 파일을 각각 실행해주세요
