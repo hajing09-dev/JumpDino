@@ -4,10 +4,10 @@
 
 import cv2  # OpenCV 라이브러리 불러오기
 import mediapipe as mp  # MediaPipe 라이브러리
-import serial
+#import serial
 import pyautogui  # Dino 게임 키 입력용 
 
-ar = serial.Serial('/dev/tty.usbserial-B0018XWS', 9600)
+# ar = serial.Serial('/dev/tty.usbserial-B0018XWS', 9600)
 
 # MediaPipe 포즈 인식 모델 설정
 mp_pose = mp.solutions.pose
@@ -29,6 +29,7 @@ while cap.isOpened():  # 웹캠이 열려있는 동안 반복
     success, frame = cap.read()
     if not success:  # 프레임을 읽지 못한 경우 루프 종료
         break
+    
 
     # MediaPipe는 RGB 포맷을 사용하므로 BGR을 RGB로 변환
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -73,7 +74,7 @@ while cap.isOpened():  # 웹캠이 열려있는 동안 반복
         pyautogui.keyUp('space')
 
     if last_signal != signal:
-        ar.write(signal.encode())
+        #ar.write(signal.encode())
         last_signal = signal
 
     # 결과 프레임을 화면에 표시
@@ -86,4 +87,4 @@ while cap.isOpened():  # 웹캠이 열려있는 동안 반복
 # 웹캠과 모든 창을 닫습니다.
 cap.release()
 cv2.destroyAllWindows()
-ar.close()
+#ar.close()
