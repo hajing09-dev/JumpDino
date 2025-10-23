@@ -62,13 +62,13 @@ class Obstacle:
     def __init__(self, x, ground_y):
         self.x = float(x)
         # 랜덤 너비/높이(픽셀)
-        self.width = random.randint(20, 60)
-        self.height = random.randint(30, 70)
+        self.width = random.randint(30, 50)
+        self.height = random.randint(40, 60)
         # y는 바닥(ground_y)을 기준으로 위로 올려서 정렬
         self.y = float(ground_y - self.height)
         # 속도를 픽셀/초로 설정(시간 기반 업데이트)
         # 기본 속도 범위를 상향 조정 (더 빠르게 이동)
-        self.base_speed = float(random.randint(300, 600))
+        self.base_speed = OBSTACLE_BASE_SPEED
         # 실제 속도는 생성 시 외부에서 보정 가능 (spawn logic에서 설정)
         self.speed = self.base_speed
         self.passed = False
@@ -116,6 +116,8 @@ reset_game()
 min_gap = 220
 # 초기 스폰 간격(초)
 spawn_interval = random.uniform(0.8, 2.0)
+# 기본 장애물 속도(픽셀/초) - 고정값으로 설정하면 모든 장애물의 base_speed가 동일해짐
+OBSTACLE_BASE_SPEED = 450.0
 
 # --- 메인 루프 ---
 running = True
@@ -164,10 +166,14 @@ while running:
             # 마지막 장애물의 x가 충분히 왼쪽에 있으면 스폰
             # (장애물이 너무 붙어 나오지 않도록 min_gap으로 보호)
             if len(obstacles) == 0 or obstacles[-1].x < WIDTH - min_gap:
-                # 난이도(점수)에 따라 속도 보정: score 증가 시 속도 증가
-                # speed_scale 계수는 난이도 곡선 조정 포인트
-                speed_scale = 1.0 + (score * 0.05)
+                # 레벨 기반 속도 보정
+                # level = score // 5 (예: 0..4 = 레벨0, 5..9 = 레벨1, ...)
+                level = score // 5
+                # level 당 10% 속도 증가(e.g., level=1 => 1.1배)
+                speed_scale = 1.0 + (level * 0.10)
                 obs = Obstacle(WIDTH, HEIGHT - 40)
+                # Obstacle의 base_speed를 고정 상수로 덮어쓰기
+                obs.base_speed = OBSTACLE_BASE_SPEED
                 obs.speed = obs.base_speed * speed_scale
                 obstacles.append(obs)
                 spawn_timer = 0.0
