@@ -4,7 +4,7 @@ import pyautogui  # 키 입력용
 
 
 # MediaPipe 포즈 인식 모델 설정
-mp_pose = mp.solutions.pose
+mp_pose = mp.solutions.pose 
 mp_drawing = mp.solutions.drawing_utils
 
 # 포즈 인식 모델 초기화
