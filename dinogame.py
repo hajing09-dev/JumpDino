@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 # 화면 크기 설정
 WIDTH, HEIGHT = 800, 400
@@ -12,18 +13,67 @@ clock = pygame.time.Clock()
 # 한글 표시를 위해 시스템 한글 폰트 사용
 font = pygame.font.SysFont("Apple SD Gothic Neo", 48)
 
+# --- 스프라이트 로드 (달리기 2프레임, 스탠딩 1프레임) ---
+SPRITES_DIR = os.path.join(os.path.dirname(__file__), 'sprites')
+def load_image(name):
+    path = os.path.join(SPRITES_DIR, name)
+    try:
+        img = pygame.image.load(path).convert_alpha()
+        return img
+    except Exception as e:
+        print(f"Warning: failed to load sprite {path}: {e}")
+        # 실패 시 투명한 표준 서피스 반환
+        return pygame.Surface((40, 40), pygame.SRCALPHA)
+
+# 필요한 프레임을 미리 로드
+RUN_FRAMES = [load_image('dino_running.png'), load_image('dino_running_2.png')]
+STAND_FRAME = load_image('dino_standing.png')
+# Dino 출력 크기 조정(스케일링). 1.0 = 원본, 0.6 = 60% 크기
+DINO_SCALE = 0.65
+def _scale_frames(frames, scale):
+    scaled = []
+    for f in frames:
+        w, h = f.get_size()
+        nw, nh = max(1, int(w * scale)), max(1, int(h * scale))
+        scaled.append(pygame.transform.smoothscale(f, (nw, nh)))
+    return scaled
+
+# 스프라이트를 축소하여 사용
+RUN_FRAMES = _scale_frames(RUN_FRAMES, DINO_SCALE)
+STAND_FRAME = pygame.transform.smoothscale(STAND_FRAME, _scale_frames([STAND_FRAME], DINO_SCALE)[0].get_size())
+
+# --- 장애물 이미지 로드 ---
+# sprites 폴더에서 obstacle_*.png 를 자동으로 찾아 로드합니다.
+OBSTACLE_IMAGE_NAMES = [n for n in os.listdir(SPRITES_DIR) if n.lower().startswith('obstacle_') and n.lower().endswith('.png')]
+OBSTACLE_IMAGES = [load_image(n) for n in OBSTACLE_IMAGE_NAMES]
+# 장애물 이미지 스케일 비율 (예: 0.6 => 60%)
+OBSTACLE_SCALE = 0.6
+# 로드된 장애물 이미지가 있으면 지정한 스케일로 축소
+if len(OBSTACLE_IMAGES) > 0:
+    OBSTACLE_IMAGES = _scale_frames(OBSTACLE_IMAGES, OBSTACLE_SCALE)
+
 # --- 클래스 및 함수 정의 ---
 class Dino:
     def __init__(self, x, ground_y):
         self.x = x
         self.ground_y = ground_y
+        # y는 상단 y 좌표(기존 코드와 호환)
         self.y = ground_y
-        self.width = 40
-        self.height = 40
+        # 스탠딩 프레임 크기를 기준으로 바운딩 설정
+        w, h = STAND_FRAME.get_size()
+        self.width = w
+        self.height = h
         self.vel_y = 0
         self.jump_power = -15
         self.gravity = 1
         self.is_jumping = False
+        # 애니메이션 타이머 (러닝 2프레임 순환)
+        self.anim_idx = 0
+        self.anim_t = 0.0
+        self.anim_frame_time = 0.12
+        # 현재 표시할 프레임
+        self.current_frame = STAND_FRAME
+
     def update(self, jump_signal, dt):
         """
         점프 및 중력 업데이트 (시간 기반)
@@ -53,17 +103,41 @@ class Dino:
             self.y = self.ground_y
             self.vel_y = 0
             self.is_jumping = False
+        # 애니메이션: 점프 중에는 스탠딩 프레임, 지면에 있으면 러닝 애니메이션
+        if self.is_jumping:
+            self.current_frame = STAND_FRAME
+            # 리셋 타이머(공중에서는 애니메이션 진행 X)
+            self.anim_t = 0.0
+            self.anim_idx = 0
+        else:
+            # 러닝 프레임 순환
+            self.anim_t += dt
+            if self.anim_t >= self.anim_frame_time:
+                self.anim_t -= self.anim_frame_time
+                self.anim_idx = (self.anim_idx + 1) % len(RUN_FRAMES)
+            self.current_frame = RUN_FRAMES[self.anim_idx]
 
     def draw(self, surface):
-         # 현재는 단순한 색칠된 사각형으로 표현
-        pygame.draw.rect(surface, (0, 200, 0), (self.x, int(self.y), self.width, self.height))
+        # 현재 애니메이션 프레임을 그립니다.
+        # self.y는 '기준선(바닥 y)'로 사용하므로 이미지를 bottom-align 하여 그립니다.
+        frame = getattr(self, 'current_frame', STAND_FRAME)
+        fh = frame.get_height()
+        draw_x = int(self.x)
+        draw_y = int(self.y - fh)
+        surface.blit(frame, (draw_x, draw_y))
 
 class Obstacle:
     def __init__(self, x, ground_y):
         self.x = float(x)
-        # 랜덤 너비/높이(픽셀)
-        self.width = random.randint(30, 50)
-        self.height = random.randint(40, 60)
+        # 가능한 경우 이미지 기반 장애물 사용: sprites 폴더에서 불러온 OBSTACLE_IMAGES 사용
+        if len(OBSTACLE_IMAGES) > 0:
+            self.image = random.choice(OBSTACLE_IMAGES)
+            self.width, self.height = self.image.get_size()
+        else:
+            self.image = None
+            # 랜덤 너비/높이(픽셀)
+            self.width = random.randint(30, 50)
+            self.height = random.randint(40, 60)
         # y는 바닥(ground_y)을 기준으로 위로 올려서 정렬
         self.y = float(ground_y - self.height)
         # 속도를 픽셀/초로 설정(시간 기반 업데이트)
@@ -81,13 +155,25 @@ class Obstacle:
         self.x -= self.speed * dt
 
     def draw(self, surface):
-        # 현재는 검정색 사각형으로 장애물 표현
-        pygame.draw.rect(surface, (0, 0, 0), (self.x, self.y, self.width, self.height))
+        # 이미지가 있으면 이미지로, 없으면 사각형으로 표시
+        if getattr(self, 'image', None) is not None:
+            surface.blit(self.image, (int(self.x), int(self.y)))
+        else:
+            # 어두운 배경에서 보이도록 밝은 회색으로 장애물 표현
+            pygame.draw.rect(surface, (200, 200, 200), (self.x, self.y, self.width, self.height))
 
 def check_collision(dino, obs):
-    # 충돌 판정: pygame.Rect의 colliderect 사용
-    dino_rect = pygame.Rect(dino.x, int(dino.y), dino.width, dino.height)
-    obs_rect = pygame.Rect(obs.x, obs.y, obs.width, obs.height)
+    # 충돌 판정: Dino는 self.y를 '바닥 기준선(ground_y)'로 사용하므로
+    # 현재 표시중인 프레임 크기를 이용해 실제 top y를 계산한다.
+    # obstacle은 이미 top-y 기준(self.y)으로 설정되어 있음.
+    try:
+        frame = getattr(dino, 'current_frame')
+        dw, dh = frame.get_size()
+    except Exception:
+        dw, dh = dino.width, dino.height
+    dino_top = int(dino.y - dh)
+    dino_rect = pygame.Rect(int(dino.x), dino_top, int(dw), int(dh))
+    obs_rect = pygame.Rect(int(obs.x), int(obs.y), int(obs.width), int(obs.height))
     return dino_rect.colliderect(obs_rect)
 
 def draw_button(surface, text, rect, color, text_color):
@@ -99,7 +185,8 @@ def draw_button(surface, text, rect, color, text_color):
 
 def reset_game():
     global dino, obstacles, spawn_timer, score, game_over
-    dino = Dino(50, HEIGHT - 80)
+    # Dino의 기준선(바닥 y)을 장애물과 일치시키기 위해 HEIGHT-40을 사용
+    dino = Dino(50, HEIGHT - 40)
     obstacles = []
     spawn_timer = 0
     score = 0
@@ -136,23 +223,17 @@ while running:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 reset_game()
 
-    # 배경 지우기
-    screen.fill((255, 255, 255))
+    # 배경 지우기 (어두운 색)
+    screen.fill((20, 20, 20))
 
     if not game_over:
         # 키 상태 읽기 (로컬 테스트용)
         keys = pygame.key.get_pressed()
-        signal_text = ""
+        # 현재는 점프(스페이스)만 사용합니다. 웅크리기 기능은 추후 추가 예정
         jump_signal = keys[pygame.K_SPACE]
-        sneak_signal = keys[pygame.K_DOWN]
-        if jump_signal:
-            signal_text += "점프 "
-        if sneak_signal:
-            signal_text += "웅크리기 "
-        if not signal_text:
-            signal_text = "없음"
-        # 화면에 현재 신호 표시 (디버그/테스트 목적)
-        text_surface = font.render(f"신호: {signal_text}", True, (0, 0, 0))
+        signal_text = "점프" if jump_signal else "없음"
+        # 화면에 현재 신호 표시 (디버그/테스트 목적) - 어두운 배경에서는 밝은 색으로
+        text_surface = font.render(f"신호: {signal_text}", True, (255, 255, 255))
         screen.blit(text_surface, (100, 150))
 
         # --- Dino 업데이트: dt(초)를 사용하여 프레임 독립 동작 보장 ---
@@ -199,8 +280,8 @@ while running:
                 obs.passed = True
                 score += 1
 
-        # 점수 표시
-        score_surface = font.render(f"점수: {score}", True, (0, 0, 255))
+        # 점수 표시 (밝은 색)
+        score_surface = font.render(f"점수: {score}", True, (255, 255, 255))
         screen.blit(score_surface, (100, 100))
 
     else:
