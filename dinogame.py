@@ -10,8 +10,33 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.SCALED | pygame.DOUBLEBUF, vsync=1)
 pygame.display.set_caption('Jump Dino')
 clock = pygame.time.Clock()
-# 한글 표시를 위해 시스템 한글 폰트 사용
-font = pygame.font.SysFont("Apple SD Gothic Neo", 48)
+# 한글 표시: 프로젝트 폴더에 `fonts/` 폴더에 TTF/OTF 파일을 넣으면 우선 로드합니다.
+# 없으면 시스템 폰트를 사용합니다.
+FONT_DIR = os.path.join(os.path.dirname(__file__), 'fonts')
+font = None
+font_btn = None
+try:
+    if os.path.isdir(FONT_DIR):
+        font_files = [n for n in os.listdir(FONT_DIR) if n.lower().endswith(('.ttf', '.otf'))]
+    else:
+        font_files = []
+except Exception:
+    font_files = []
+
+if font_files:
+    font_path = os.path.join(FONT_DIR, font_files[0])
+    try:
+        font = pygame.font.Font(font_path, 48)
+        font_btn = pygame.font.Font(font_path, 36)
+        print(f"Loaded font from {font_path}")
+    except Exception as e:
+        print(f"Warning: failed to load font {font_path}: {e}")
+        font = pygame.font.SysFont("Apple SD Gothic Neo", 48)
+        font_btn = pygame.font.SysFont("Apple SD Gothic Neo", 36)
+else:
+    # 폰트 파일이 없으면 시스템 폰트 사용
+    font = pygame.font.SysFont("Apple SD Gothic Neo", 48)
+    font_btn = pygame.font.SysFont("Apple SD Gothic Neo", 36)
 
 # --- 스프라이트 로드 (달리기 2프레임, 스탠딩 1프레임) ---
 SPRITES_DIR = os.path.join(os.path.dirname(__file__), 'sprites')
@@ -178,7 +203,7 @@ def check_collision(dino, obs):
 
 def draw_button(surface, text, rect, color, text_color):
     pygame.draw.rect(surface, color, rect)
-    font_btn = pygame.font.SysFont("Apple SD Gothic Neo", 36)
+    # 전역으로 생성된 font_btn 사용
     txt = font_btn.render(text, True, text_color)
     txt_rect = txt.get_rect(center=rect.center)
     surface.blit(txt, txt_rect)
