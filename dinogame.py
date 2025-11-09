@@ -72,7 +72,7 @@ STAND_FRAME = pygame.transform.smoothscale(STAND_FRAME, _scale_frames([STAND_FRA
 OBSTACLE_IMAGE_NAMES = [n for n in os.listdir(SPRITES_DIR) if n.lower().startswith('obstacle_') and n.lower().endswith('.png')]
 OBSTACLE_IMAGES = [load_image(n) for n in OBSTACLE_IMAGE_NAMES]
 # 장애물 이미지 스케일 비율 (예: 0.6 => 60%)
-OBSTACLE_SCALE = 0.6
+OBSTACLE_SCALE = 0.5
 # 로드된 장애물 이미지가 있으면 지정한 스케일로 축소
 if len(OBSTACLE_IMAGES) > 0:
     OBSTACLE_IMAGES = _scale_frames(OBSTACLE_IMAGES, OBSTACLE_SCALE)
