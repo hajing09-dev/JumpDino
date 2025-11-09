@@ -1,10 +1,16 @@
 import pygame
 import random
 import os
-
+ 
 # 화면 크기 설정
 WIDTH, HEIGHT = 800, 400
 pygame.init()
+# --- 물리/튜닝 상수 (여기서 값 조정으로 점프/체공 시간 튜닝 가능) ---
+# 음수 값은 위 방향(픽셀/프레임 유사 단위). 더 큰 절댓값 => 더 강한 점프
+JUMP_POWER = -18   # 이전 -15, 값을 키워서 초기 속도 증가 (더 높게)
+# 중력 계수: 값이 작을수록 중력이 약해져 체공 시간이 늘어남
+GRAVITY = 0.9      # 이전 1.0 -> 0.9로 약간 낮춤 (더 오래 떠있음)
+
 # 화면 생성: SCALED(해상도 스케일링) + DOUBLEBUF(더블 버퍼)
 # vsync=1을 요청하면 지원되는 플랫폼에서 화면 찢김(tearing) 완화에 도움됨(항상 보장되지는 않음)
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.SCALED | pygame.DOUBLEBUF, vsync=1)
@@ -89,8 +95,9 @@ class Dino:
         self.width = w
         self.height = h
         self.vel_y = 0
-        self.jump_power = -15
-        self.gravity = 1
+        # 점프 파라미터를 상단 상수에서 가져옵니다(더 쉽게 튜닝 가능)
+        self.jump_power = JUMP_POWER
+        self.gravity = GRAVITY
         self.is_jumping = False
         # 애니메이션 타이머 (러닝 2프레임 순환)
         self.anim_idx = 0
